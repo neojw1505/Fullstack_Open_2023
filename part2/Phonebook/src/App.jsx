@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import personsService from "./services/persons";
 
 const App = () => {
   const initialPersons = useEffect(() => {
-    axios
-    .get("http://localhost:3001/persons")
-    .then( response => {
-      setPersons(response.data)
-    })
+    axios.get("http://localhost:3001/persons").then((response) => {
+      setPersons(response.data);
+    });
   }, []);
 
   const [persons, setPersons] = useState([]);
@@ -37,20 +36,38 @@ const App = () => {
     }
   };
 
-  const addPerson = (event) => {
+  const addPerson = event => {
     event.preventDefault();
-    const personObject = {
-      name: newName,
-      number: newNumber,
-      id: persons.length + 1,
-    };
 
-    if (persons.find((p) => p.name === newName)) {
-      alert(`${newName} is already added to the phonebook`);
+    const newPerson = {
+      name: newName,
+      number: newNumber
+    }
+    const existingPerson = persons.find(person => person.name === newName);
+    // Update person if newName already exists, otherwise add new person
+    if (existingPerson) {
+      if (window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)){
+        personsService
+        .update(existingPerson.id, newPerson)
+        .then(updatedPerson => {
+          setPersons(persons.map(person => person.id === updatedPerson.id ? updatedPerson : person));
+        })
+      }
     } else {
-      setPersons([...persons, personObject]);
-      setNewName("");
-      setNewNumber("");
+      personsService.create(newPerson)
+      .then(newPerson => {
+        setPersons(persons.concat(newPerson));
+      })
+      .catch(error => {
+        console.log(error);
+      });
+    }
+  };
+
+  const delPerson = (id) => {
+    const personToDelete = persons.find((p)=>p.id === id)
+    if (window.confirm(`Delete ${personToDelete.name}`)){
+      personsService.remove(id).then(() => setPersons(persons.filter(person => person.id !== id)))
     }
   };
 
@@ -73,18 +90,21 @@ const App = () => {
         addPerson={addPerson}
       />
       <h2>Numbers</h2>
-      <Person persons={persons} />
+      <Person persons={persons} delPerson={delPerson}/>
     </div>
   );
 };
 
-const Person = ({ persons }) =>
+const Person = ({ persons, delPerson }) =>
   persons.map((p) => {
     return (
-      <p key={p.name}>
-        {" "}
-        {p.name} {p.number}{" "}
-      </p>
+      <>
+        <p key={p.id}>
+          {" "}
+          {p.name} {p.number}{" "}
+          <button onClick={()=>delPerson(p.id)}>Delete</button>
+        </p>
+      </>
     );
   });
 
