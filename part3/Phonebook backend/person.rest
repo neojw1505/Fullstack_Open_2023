@@ -1,0 +1,14 @@
+DELETE http://localhost:3002/api/persons/3 HTTP/1.1
+
+###
+GET http://localhost:3002/api/persons/ HTTP/1.1
+
+###
+POST http://localhost:3002/api/persons/ HTTP/1.1
+Content-Type: application/json
+
+{
+    "name": "John Cena",
+    "number": "8888-888-666"
+}
+
